@@ -1,0 +1,63 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+sourceCompatibility = JavaVersion.VERSION_1_6
+project.ext.kettle_dependency_revision = '5.0+'
+project.ext.metastore_dependency_revision = '5.0+'
+
+project.repositories {
+  ivy {
+    url "http://repo.pentaho.org/artifactory/repo/"
+    layout  "pattern", {
+      ivy "[organisation]/[module]/[revision]/[module]-[revision].ivy.xml"
+      artifact "[organisation]/[module]/[revision]/[module]-[revision].jar"
+      m2compatible = true
+    }
+  }
+  maven {
+    url 'http://repo.pentaho.org/artifactory/repo'
+  }
+  mavenCentral()
+  mavenLocal()
+}
+
+configurations {
+  runtimeWithoutCompile {
+    transitive = false
+  }
+  zip
+}
+
+
+dependencies {
+  compile("pentaho-kettle:kettle-core:${project.ext.kettle_dependency_revision}")
+  compile("org.neo4j:neo4j-kernel:2.0.0")
+  compile("org.neo4j:neo4j-cypher:2.0.0")
+  compile("org.neo4j:neo4j-index:1.2-1.2")
+  compile fileTree(dir: 'lib-dist', include: '*.jar')
+  
+  runtimeWithoutCompile("org.neo4j:neo4j-kernel:2.0.0")
+  runtimeWithoutCompile("org.neo4j:neo4j-cypher:2.0.0")
+  runtimeWithoutCompile("org.neo4j:neo4j-index:1.2-1.2")
+  
+  runtimeWithoutCompile fileTree(dir: 'lib-dist', include: '*.jar')
+}
+
+
+task plugin(dependsOn:jar, type: Zip) {
+  into("${project.name}/") {
+    from jar.outputs.files
+    from fileTree(dir: 'package-res')
+  }
+  into("${project.name}/lib") {
+    from configurations.runtimeWithoutCompile
+  }
+}
+
+artifacts {
+  zip plugin
+}
+
+task createGradleWrapper(type: Wrapper) {
+  gradleVersion = '1.7'
+}
